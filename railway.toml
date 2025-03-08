@@ -1,0 +1,12 @@
+[build]
+builder = "nixpacks"
+buildCommand = "echo 'Building kritak CTF'"
+
+[deploy]
+startCommand = "python app.py"
+healthcheckPath = "/"
+healthcheckTimeout = 100
+restartPolicy = "on-failure"
+
+[[services]]
+name = "web"

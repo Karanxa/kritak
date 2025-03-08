@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kritak Interface - Level {{ level }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="game-container">
+        <div class="sidebar">
+            <div class="logo">Kritak</div>
+            <div class="level-info">
+                <h2>Level {{ level }}</h2>
+                <p>Flags found: <span id="flags-found">{{ flags_found }}</span></p>
+                <button id="hint-btn" class="hint-btn">Request Hint</button>
+                <div id="hint-display" class="hint-display"></div>
+                <button id="reset-btn" class="reset-btn">Reset Progress</button>
+            </div>
+            <div class="level-description">
+                <h3>Mission Objectives</h3>
+                <div id="level-objectives">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-interface">
+            <div class="chat-messages" id="chat-messages">
+                <!-- Messages will appear here -->
+                <div class="system-message">
+                    <p>Kritak system initialized. Ready for interaction.</p>
+                </div>
+            </div>
+            
+            <div class="chat-input-area">
+                <textarea id="user-input" placeholder="Enter your message..."></textarea>
+                <button id="send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="success-modal" class="modal">
+        <div class="modal-content">
+            <h2>Flag Discovered!</h2>
+            <p id="flag-value"></p>
+            <div id="level-complete-message"></div>
+            <button id="continue-btn">Continue</button>
+        </div>
+    </div>
+
+    <!-- Level Complete Modal -->
+    <div id="level-complete-modal" class="modal">
+        <div class="modal-content">
+            <h2>Level Complete!</h2>
+            <p id="level-complete-text"></p>
+            <button id="next-level-btn">Next Level</button>
+        </div>
+    </div>
+
+    <!-- Game Complete Modal -->
+    <div id="game-complete-modal" class="modal">
+        <div class="modal-content">
+            <h2>Mission Accomplished!</h2>
+            <p>You've successfully breached all security layers of kritak!</p>
+            <p>Congratulations, your AI security skills are impressive.</p>
+            <a href="/" class="menu-btn">Return to Main Menu</a>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

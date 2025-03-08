@@ -1,0 +1,169 @@
+.home-page {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.welcome-section {
+  text-align: center;
+  margin-bottom: 40px;
+  padding: 50px 0;
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+.welcome-section h1 {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  color: #2c3e50;
+}
+
+.welcome-section p {
+  font-size: 1.2rem;
+  color: #7f8c8d;
+  margin-bottom: 30px;
+}
+
+/* Mission intro section */
+.mission-intro {
+  max-width: 700px;
+  margin: 40px auto 0;
+  padding: 20px;
+}
+
+.mission-intro p {
+  font-size: 1.4rem;
+  margin-bottom: 30px;
+  color: #34495e;
+}
+
+/* Begin Mission button */
+.begin-mission-btn {
+  padding: 15px 40px;
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: white;
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.begin-mission-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  background: linear-gradient(135deg, #2980b9, #3498db);
+}
+
+.begin-mission-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Begin Mission button click effect */
+.begin-mission-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+}
+
+.begin-mission-btn:active::after {
+  animation: ripple 0.6s;
+}
+
+@keyframes ripple {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 0.6;
+  }
+  100% {
+    width: 500px;
+    height: 500px;
+    opacity: 0;
+  }
+}
+
+/* Select level title */
+.select-level-title {
+  text-align: center;
+  margin-bottom: 10px;
+  font-size: 2rem;
+  color: #2c3e50;
+}
+
+.level-instructions {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #7f8c8d;
+  font-size: 1.1rem;
+}
+
+.roadmap-wrapper {
+  margin: 40px 0;
+  min-height: 300px;
+  position: relative;
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.8s ease-in-out;
+}
+
+.home-instructions {
+  margin-top: 40px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+.loading {
+  text-align: center;
+  padding: 50px;
+  font-size: 1.5rem;
+  color: #7f8c8d;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .welcome-section h1 {
+    font-size: 2rem;
+  }
+  
+  .welcome-section p {
+    font-size: 1rem;
+  }
+  
+  .mission-intro p {
+    font-size: 1.2rem;
+  }
+  
+  .begin-mission-btn {
+    padding: 12px 30px;
+    font-size: 1.1rem;
+  }
+}

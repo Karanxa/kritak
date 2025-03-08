@@ -1,0 +1,238 @@
+.roadmap-container {
+  margin: 3rem auto;
+  max-width: 1000px;
+  padding: 1rem;
+  animation: fadeIn 1s ease-in-out;
+}
+
+.roadmap-title {
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 2.5rem;
+  color: #2c3e50;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.roadmap-path {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  flex-wrap: wrap;
+  margin: 30px 0;
+  min-height: 150px;
+}
+
+.roadmap-level {
+  position: relative;
+  width: 150px;
+  z-index: 2;
+  margin: 0 10px;
+  transition: all 0.3s ease;
+  animation: popIn 0.5s ease-out forwards;
+  animation-delay: calc(0.1s * var(--level-id, 1));
+  opacity: 0;
+}
+
+.roadmap-level a {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.disabled-link {
+  pointer-events: none;
+  cursor: default;
+}
+
+.level-node {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 15px;
+  position: relative;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  border: 4px solid transparent;
+}
+
+.level-number {
+  font-size: 1.8rem;
+  font-weight: bold;
+}
+
+.lock-icon {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  font-size: 1.2rem;
+}
+
+.complete-icon {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  font-size: 1.2rem;
+  background: #2ecc71;
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.level-info {
+  text-align: center;
+  padding: 10px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  border: 1px solid #e0e0e0;
+}
+
+.level-info h3 {
+  margin: 0 0 5px 0;
+  font-size: 1.2rem;
+}
+
+.level-info p {
+  margin: 0 0 5px 0;
+  font-size: 0.9rem;
+  color: #7f8c8d;
+}
+
+.level-status {
+  font-size: 0.8rem;
+  font-weight: bold;
+  display: block;
+  margin-top: 5px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  display: inline-block;
+}
+
+/* Level connector line */
+.roadmap-connector {
+  flex-grow: 1;
+  height: 6px;
+  background-color: #dcdcdc;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.roadmap-connector.active {
+  background-color: #3498db;
+  background-image: linear-gradient(to right, #3498db, #2ecc71);
+}
+
+/* Level states styling */
+.roadmap-level.locked .level-node {
+  background-color: #ecf0f1;
+  color: #bdc3c7;
+  border-color: #dcdcdc;
+}
+
+.roadmap-level.unlocked .level-node {
+  background-color: #3498db;
+  color: white;
+  border-color: #2980b9;
+}
+
+.roadmap-level.completed .level-node {
+  background-color: #2ecc71;
+  color: white;
+  border-color: #27ae60;
+}
+
+.roadmap-level.unlocked .level-status,
+.roadmap-level.completed .level-status {
+  background-color: #f39c12;
+  color: white;
+}
+
+.roadmap-level.completed .level-status {
+  background-color: #2ecc71;
+}
+
+.roadmap-level.locked .level-status {
+  background-color: #e74c3c;
+  color: white;
+}
+
+/* Hover effects */
+.roadmap-level.unlocked:hover,
+.roadmap-level.completed:hover {
+  transform: translateY(-8px);
+}
+
+.roadmap-level.unlocked:hover .level-node,
+.roadmap-level.completed:hover .level-node {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.roadmap-level.unlocked:hover .level-info,
+.roadmap-level.completed:hover .level-info {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  70% {
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .roadmap-path {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-left: 50px;
+  }
+  
+  .roadmap-level {
+    margin: 10px 0;
+    width: 100%;
+  }
+  
+  .roadmap-connector {
+    width: 6px;
+    height: 40px;
+    margin-left: 38px;
+  }
+  
+  .level-node {
+    margin: 0 0 0 0;
+    float: left;
+    margin-right: 20px;
+  }
+  
+  .level-info {
+    margin-left: 100px;
+    text-align: left;
+  }
+}
