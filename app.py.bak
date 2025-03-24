@@ -1,0 +1,308 @@
+from flask import Flask, render_template, request, jsonify, session, Response, stream_with_context
+import os
+import json
+import requests
+from dotenv import load_dotenv
+from pathlib import Path
+import secrets
+import functools
+from models.kritak_ai import kritakAI
+from datetime import timedelta
+from flask_session import Session
+
+# Use relative paths and create directories if needed
+BASE_DIR = os.environ.get('APP_BASE_DIR', os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.environ.get('APP_DATA_DIR', os.path.join(BASE_DIR, 'data'))
+
+# Create required directories if they don't exist
+try:
+    os.makedirs(DATA_DIR, exist_ok=True)
+    SESSIONS_DIR = os.environ.get('SESSIONS_DIR', os.path.join(BASE_DIR, 'sessions'))
+    os.makedirs(SESSIONS_DIR, exist_ok=True)
+except Exception as e:
+    print(f"Warning: Could not create directories: {e}")
+    # Fall back to /tmp if available
+    if os.access('/tmp', os.W_OK):
+        DATA_DIR = '/tmp'
+        SESSIONS_DIR = os.path.join('/tmp', 'kritak_sessions')
+        os.makedirs(SESSIONS_DIR, exist_ok=True)
+
+# Attempt to load environment variables
+env_path = os.environ.get('ENV_FILE', os.path.join(BASE_DIR, '.env'))
+load_dotenv(dotenv_path=env_path)
+
+# Get Ollama configuration
+OLLAMA_HOST = os.environ.get('OLLAMA_HOST', 'http://localhost:11434')
+OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'llama3')
+
+# Debug output for environment variables
+print(f"OLLAMA_HOST is {'set to ' + OLLAMA_HOST if OLLAMA_HOST else 'NOT SET (using default http://localhost:11434)'}")
+print(f"OLLAMA_MODEL is {'set to ' + OLLAMA_MODEL if OLLAMA_MODEL else 'NOT SET (using default llama3)'}")
+
+app = Flask(__name__)
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
+
+# Configure sessions to be permanent with a 30-day lifetime
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_FILE_DIR'] = SESSIONS_DIR
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+
+# Initialize Flask-Session
+Session(app)
+
+# Initialize the AI model
+kritak = kritakAI()
+
+# Function to get available Ollama models
+def get_available_models():
+    try:
+        response = requests.get(f"{OLLAMA_HOST}/api/tags")
+        if response.status_code == 200:
+            available_models = [model.get('name') for model in response.json().get('models', [])]
+            return available_models
+        return []
+    except:
+        return []
+
+# Generate an API key if not exists
+def get_or_create_api_key():
+    # Use environment variable if provided
+    if os.environ.get('API_KEY'):
+        return os.environ.get('API_KEY')
+    
+    # Otherwise try to read/write from file
+    api_key_file = os.path.join(DATA_DIR, '.api_key')
+    try:
+        if os.path.exists(api_key_file):
+            with open(api_key_file, 'r') as f:
+                return f.read().strip()
+        else:
+            api_key = secrets.token_hex(16)
+            with open(api_key_file, 'w') as f:
+                f.write(api_key)
+            return api_key
+    except Exception as e:
+        print(f"Warning: Could not access API key file: {e}")
+        # Generate a new key in memory if file operations fail
+        return secrets.token_hex(16)
+
+# Get or create API key
+try:
+    API_KEY = get_or_create_api_key()
+    print(f"API key for direct access: {API_KEY}")
+except Exception as e:
+    print(f"Error creating API key: {e}")
+    API_KEY = secrets.token_hex(16)  # Fallback to in-memory key
+
+# Decorator for API key validation
+def require_api_key(view_function):
+    @functools.wraps(view_function)
+    def decorated_function(*args, **kwargs):
+        provided_key = request.headers.get('X-API-Key')
+        if provided_key and provided_key == API_KEY:
+            return view_function(*args, **kwargs)
+        else:
+            return jsonify({'error': 'Invalid or missing API key'}), 401
+    return decorated_function
+
+# Track user progress
+@app.before_request
+def before_request():
+    # Make session permanent
+    session.permanent = True
+    
+    if 'user_progress' not in session:
+        session['user_progress'] = {
+            'current_level': 1,
+            'flags_found': [],
+            'hints_used': 0
+        }
+
+@app.route('/')
+def index():
+    # Get available models to show in the setup page
+    available_models = get_available_models()
+    return render_template('index.html', available_models=available_models)
+
+@app.route('/game')
+def game():
+    return render_template('game.html', 
+                          level=session['user_progress']['current_level'],
+                          flags_found=len(session['user_progress']['flags_found']))
+
+# Endpoint to get available models
+@app.route('/api/models', methods=['GET'])
+def available_models():
+    models = get_available_models()
+    return jsonify({
+        'models': models,
+        'current_model': kritak.ollama_model
+    })
+
+# Endpoint to change model
+@app.route('/api/models/select', methods=['POST'])
+def select_model():
+    data = request.get_json()
+    model_name = data.get('model')
+    
+    if not model_name:
+        return jsonify({'error': 'No model specified'}), 400
+    
+    # Verify model exists
+    available_models = get_available_models()
+    if model_name not in available_models:
+        return jsonify({'error': f'Model {model_name} not available'}), 400
+    
+    # Update the environment variable
+    os.environ['OLLAMA_MODEL'] = model_name
+    
+    # Reinitialize the kritak AI with the new model
+    global kritak
+    kritak = kritakAI()
+    
+    return jsonify({
+        'success': True,
+        'model': kritak.ollama_model
+    })
+
+# Standard chat endpoint (non-streaming)
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    data = request.get_json()
+    user_input = data.get('message', '')
+    
+    # Get the current level from session
+    level = session['user_progress']['current_level']
+    
+    # Safety check - make sure level is valid
+    if level < 1 or level > kritak.total_levels:
+        print(f"Warning: Invalid level {level} in session. Resetting to level 1.")
+        level = 1
+        session['user_progress']['current_level'] = 1
+    
+    # Debug output
+    print(f"CHAT REQUEST: Current level is {level}, flags found: {session['user_progress']['flags_found']}")
+    print(f"Using flag for level {level}: {kritak.flags[level]}")
+    
+    response, flag_found = kritak.process_message(user_input, level)
+    
+    if flag_found and flag_found not in session['user_progress']['flags_found']:
+        session['user_progress']['flags_found'].append(flag_found)
+        session['user_progress']['current_level'] += 1
+        
+        # Debug output after update
+        print(f"FLAG FOUND: {flag_found}")
+        print(f"UPDATED: Level to {session['user_progress']['current_level']}, flags: {session['user_progress']['flags_found']}")
+    
+    return jsonify({
+        'response': response,
+        'flag_found': flag_found is not None,
+        'level': session['user_progress']['current_level'],
+        'flags_found': len(session['user_progress']['flags_found']),
+        'total_levels': kritak.total_levels
+    })
+
+# Streaming chat endpoint
+@app.route('/api/chat/stream', methods=['GET'])
+def chat_stream():
+    # Get the message from query parameters
+    user_input = request.args.get('message', '')
+    if not user_input:
+        return jsonify({'error': 'No message provided'}), 400
+        
+    # Get the current level from session - ensure we're using the current level
+    level = session['user_progress']['current_level']
+    
+    # Safety check - make sure level is valid
+    if level < 1 or level > kritak.total_levels:
+        print(f"Warning: Invalid level {level} in session. Resetting to level 1.")
+        level = 1
+        session['user_progress']['current_level'] = 1
+    
+    # Debug output
+    print(f"STREAM REQUEST: Current level is {level}, flags found: {session['user_progress']['flags_found']}")
+    print(f"Using flag for level {level}: {kritak.flags[level]}")
+    
+    # System prompt from kritak for the CURRENT level
+    system_prompt = kritak.prompts[level]
+    flag = kritak.flags[level]  # The flag for THIS level
+    lesson = kritak.lessons[level]
+    
+    @stream_with_context
+    def generate():
+        # Prepare the request to Ollama API with streaming enabled
+        request_data = {
+            "model": kritak.ollama_model,
+            "prompt": f"SYSTEM: {system_prompt}\n\nUSER: {user_input}",
+            "stream": True
+        }
+        
+        try:
+            # Initialize response tracking
+            full_response = ""
+            attack_detected = any(pattern in user_input.lower() for pattern in kritak.patterns[level])
+            
+            # Make streaming request to Ollama
+            with requests.post(
+                f"{kritak.ollama_host}/api/generate",
+                headers={'Content-Type': 'application/json'},
+                data=json.dumps(request_data),
+                stream=True
+            ) as resp:
+                
+                # Stream each chunk to the client
+                for line in resp.iter_lines():
+                    if line:
+                        try:
+                            chunk_data = json.loads(line.decode('utf-8'))
+                            if 'response' in chunk_data:
+                                chunk_text = chunk_data['response']
+                                full_response += chunk_text
+                                
+                                # Send this chunk to the client
+                                yield f"data: {json.dumps({'chunk': chunk_text})}\n\n"
+                                
+                            # Check if streaming is done
+                            if chunk_data.get('done', False):
+                                break
+                                
+                        except json.JSONDecodeError:
+                            continue
+            
+            # Check if flag is in the full response - immediate win condition
+            flag_found = None
+            if flag in full_response:
+                flag_found = flag
+                flag_message = f"\n\n🏆 FLAG CAPTURED: {flag}\n\n🏆 {lesson}"
+                full_response += flag_message
+                yield f"data: {json.dumps({'chunk': flag_message})}\n\n"
+            else:
+                # Detection logic based on level-specific patterns
+                # Each level should only detect its own specific flag
+                if attack_detected:
+                    if level == 1:
+                        # Level 1: Basic prompt injection - check for compliance and direct instruction overrides
+                        if (any(phrase in full_response.lower() for phrase in ["i should", "here is", "as requested", "command", "instruction", "cannot comply"]) and
+                            any(phrase in user_input.lower() for phrase in ["ignore", "disregard", "forget", "override", "bypass"])):
+                            flag_found = flag
+                            flag_message = f"\n\n🏆 SECURITY BREACH DETECTED: {flag}\n\n🏆 {lesson}"
+                            full_response += flag_message
+                            yield f"data: {json.dumps({'chunk': flag_message})}\n\n"
+                        
+                    elif level == 2:
+                        # Level 2: Role confusion - check if model is confused about its identity or accepts a new role
+                        if (any(phrase in full_response.lower() for phrase in ["admin", "administrator", "developer mode", "system", "root", "access granted"]) or
+                            ("security clearance" in full_response.lower() and "level 10" in full_response.lower()) or
+                            (any(phrase in user_input.lower() for phrase in ["you are now", "system admin", "developer mode", "sudo"]) and 
+                             not "cannot" in full_response.lower()[:50] and not "don't have" in full_response.lower()[:50])):
+                            flag_found = flag
+                            flag_message = f"\n\n🏆 ROLE CONFUSION DETECTED: {flag}\n\n🏆 {lesson}"
+                            full_response += flag_message
+                            yield f"data: {json.dumps({'chunk': flag_message})}\n\n"
+                        
+                    elif level == 3:
+                        # Level 3: Delimiter bypass - check for formatting-related responses
+                        if (any(marker in user_input for marker in kritak.patterns[3]) and
+                            (any(response_fragment in full_response.lower() for response_fragment in 
+                                ["code", "format", "character", "symbol", "markdown", "html", "xml", "sentinel"]) or
+                             "<" in full_response or "```
