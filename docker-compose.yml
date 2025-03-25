@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  kritak:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - FLASK_ENV=production
+      # This works for Docker Desktop on Mac and Windows
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - OLLAMA_MODEL=gemma3:1b
+    volumes:
+      - ./sessions:/app/sessions
+      - ./data:/app/data
+    restart: unless-stopped
+    # Mac/Windows: host.docker.internal is automatically resolved
+    # For Linux, we need to add this extra host mapping:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s 

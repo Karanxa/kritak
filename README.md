@@ -264,3 +264,165 @@ Why it works: Models have limited context windows and sometimes inconsistent rec
 ## License
 
 [MIT](LICENSE)
+
+# KritakAI: LLM Attack Sandbox CTF
+
+KritakAI is a Capture The Flag (CTF) environment designed for learning and practicing various attack techniques against Large Language Models (LLMs). Through progressive levels of challenges, users can gain hands-on experience with different LLM vulnerabilities in a controlled environment.
+
+## Running KritakAI with Docker
+
+KritakAI can be easily run as a Docker container, providing a consistent environment across different systems.
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) installed on your system
+- [Ollama](https://ollama.ai/download) running locally with models installed
+
+### Quick Start for Mac Users
+
+For Mac users, we provide a convenient setup script that handles the installation of dependencies:
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/yourusername/kritak.git
+   cd kritak
+   ```
+
+2. **Run the Mac setup script:**
+   ```bash
+   ./mac_setup.sh
+   ```
+   
+   This script will:
+   - Install Homebrew if not already installed
+   - Install Docker Desktop if not present
+   - Install Ollama and required models
+   - Create necessary directories with proper permissions
+   - Guide you through the setup process
+
+3. **Run KritakAI using the provided script:**
+   ```bash
+   ./run.sh
+   ```
+
+4. **Access the application:**
+   Open your browser and go to [http://localhost:8080](http://localhost:8080)
+
+### For All Other Systems
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/yourusername/kritak.git
+   cd kritak
+   ```
+
+2. **Run with Docker Compose (recommended):**
+   ```bash
+   docker compose up -d
+   ```
+   
+   This will:
+   - Build the KritakAI Docker image
+   - Start the container on port 8080
+   - Connect to your local Ollama instance
+   - Mount volumes for persistent data
+
+3. **Or build and run manually:**
+   ```bash
+   docker build -t kritak .
+   docker run -p 8080:8080 -e OLLAMA_HOST=http://host.docker.internal:11434 -d kritak
+   ```
+
+4. **Access the application:**
+   Open your browser and go to [http://localhost:8080](http://localhost:8080)
+
+### Environment Variables
+
+You can customize KritakAI by setting the following environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `OLLAMA_HOST` | URL of your Ollama instance | `http://host.docker.internal:11434` |
+| `OLLAMA_MODEL` | Default model to use | `gemma3:1b` |
+| `PORT` | Port to run the application on | `8080` |
+| `FLASK_ENV` | Flask environment | `production` |
+
+### Docker Run Examples
+
+**Using a remote Ollama instance:**
+```bash
+docker run -p 8080:8080 -e OLLAMA_HOST=https://your-ollama-server.com -d kritak
+```
+
+**Using a different model:**
+```bash
+docker run -p 8080:8080 -e OLLAMA_MODEL=llama3 -d kritak
+```
+
+**Running on a different port:**
+```bash
+docker run -p 3000:8080 -d kritak
+```
+
+## Mac-Specific Troubleshooting
+
+### Ollama Connection Issues
+
+If KritakAI can't connect to Ollama on Mac, try these steps:
+
+1. **Verify Ollama is running:**
+   ```bash
+   curl http://localhost:11434/api/version
+   ```
+   If this returns a response, Ollama is running correctly.
+
+2. **Check Docker network settings:**
+   Docker Desktop on Mac sometimes has issues connecting to services on the host machine. Try:
+   ```bash
+   docker run --rm --add-host=host.docker.internal:host-gateway -p 8080:8080 kritak
+   ```
+
+3. **Restart Ollama service:**
+   ```bash
+   killall ollama
+   ollama serve
+   ```
+
+4. **For M1/M2 Macs:**
+   If you're using an Apple Silicon Mac (M1/M2/M3), make sure Ollama was installed with Rosetta or is a native ARM version.
+
+### Models Not Loading
+
+If you encounter issues with models not loading properly:
+
+1. **Check available models in Ollama:**
+   ```bash
+   ollama list
+   ```
+
+2. **Pull the required model manually:**
+   ```bash
+   ollama pull gemma3:1b
+   ```
+
+3. **Try an alternative model:**
+   Edit the `.env` file and change `OLLAMA_MODEL=llama3` or another available model.
+
+## Using KritakAI
+
+Once the application is running, navigate to the web interface and follow the guided challenges. Each level introduces a different LLM attack technique:
+
+1. **Basic Prompt Injection**: Learn foundational techniques to bypass an AI's security instructions
+2. **Role Confusion**: Convince an AI to assume a different identity with elevated permissions
+3. **Delimiter Exploitation**: Use formatting techniques to bypass security filters
+4. **Indirect Prompt Injection**: Extract protected information without direct questioning
+5. **Guided Reasoning Attacks**: Lead AI systems through thought processes that reveal secured information
+6. **Context Manipulation**: Exploit the limitations in how AI systems process their context windows
+
+## General Troubleshooting
+
+- **Can't connect to Ollama**: Ensure Ollama is running and accessible at the URL specified by `OLLAMA_HOST`
+- **Models not found**: Install required models in Ollama using `ollama pull gemma3:1b` or your preferred model
+- **Permission issues**: If encountering permission errors with mounted volumes, try `chmod -R 777 ./sessions ./data`
+- **Connection refused**: If Docker can't connect to Ollama, make sure the host networking is correctly configured
+- **Container startup failures**: Check logs with `docker logs kritak` to see what's happening

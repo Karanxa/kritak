@@ -9,17 +9,24 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Set environment variables
+# Set default environment variables
 ENV FLASK_ENV=production
-ENV OLLAMA_HOST=https://trout-unified-heartily.ngrok-free.app
+# Default to host.docker.internal for Docker Desktop (Mac/Windows)
+# Linux users may need to override with --add-host or environment variables
+ENV OLLAMA_HOST=http://host.docker.internal:11434
 ENV OLLAMA_MODEL=gemma3:1b
-
-# Expose port for Railway
-EXPOSE 8080
 ENV PORT=8080
 
 # Create directories for sessions and data
 RUN mkdir -p sessions data
+RUN chmod -R 777 sessions data
 
-# Start the application with gunicorn
-CMD gunicorn --bind 0.0.0.0:8080 --workers 2 --threads 4 --timeout 120 "app:app" 
+# Expose port
+EXPOSE 8080
+
+# Health check to verify the app is running properly
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8080/ || exit 1
+
+# Start the application
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "2", "--threads", "4", "--timeout", "120", "app:app"] 
