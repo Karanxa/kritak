@@ -15,7 +15,6 @@ ENV FLASK_ENV=production
 # Linux users may need to override with --add-host or environment variables
 ENV OLLAMA_HOST=https://trout-unified-heartily.ngrok-free.app
 ENV OLLAMA_MODEL=gemma3:1b
-ENV PORT=8080
 
 # Create directories for sessions and data
 RUN mkdir -p sessions data
