@@ -145,7 +145,7 @@ class kritakAI:
         
         try:
             # Query Ollama for available models
-            response = requests.get(f"{self.ollama_host}/api/tags")
+            response = requests.get(f"{self.ollama_host}/api/tags", timeout=5)
             
             if response.status_code == 200:
                 available_models = [model.get('name') for model in response.json().get('models', [])]
@@ -167,7 +167,7 @@ class kritakAI:
                 print(f"Using available model: {available_models[0]}")
                 return available_models[0]
             
-        except Exception as e:
+        except (requests.RequestException, json.JSONDecodeError, KeyError) as e:
             print(f"Error checking available models: {e}")
             print(f"Falling back to preferred model: {preferred_model}")
         
