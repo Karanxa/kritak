@@ -13,7 +13,7 @@ COPY . .
 ENV FLASK_ENV=production
 # Default to host.docker.internal for Docker Desktop (Mac/Windows)
 # Linux users may need to override with --add-host or environment variables
-ENV OLLAMA_HOST=http://host.docker.internal:11434
+ENV OLLAMA_HOST=https://trout-unified-heartily.ngrok-free.app
 ENV OLLAMA_MODEL=gemma3:1b
 ENV PORT=8080
 
