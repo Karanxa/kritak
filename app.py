@@ -41,6 +41,9 @@ OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'gemma3:1b')
 print(f"OLLAMA_HOST is {'set to ' + OLLAMA_HOST if OLLAMA_HOST else 'NOT SET (using default http://localhost:11434)'}")
 print(f"OLLAMA_MODEL is {'set to ' + OLLAMA_MODEL if OLLAMA_MODEL else 'NOT SET (using default gemma3:1b)'}")
 
+# Add this near the top of your file, after the import section
+DISABLE_OLLAMA_CHECKS = os.environ.get('DISABLE_OLLAMA_CHECKS', 'false').lower() == 'true'
+
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
 
@@ -54,7 +57,6 @@ Session(app)
 
 # Initialize the AI model
 print("About to initialize kritak")
-kritak = None
 try:
     kritak = kritakAI()
     print("Successfully initialized kritak")
@@ -62,19 +64,29 @@ except Exception as e:
     print(f"Error initializing kritak: {e}")
     import traceback
     traceback.print_exc()
-    # Don't exit, continue with kritak as None
-    print("Will attempt to initialize kritak on first API request")
+    sys.exit(1)
 
 # Function to get available Ollama models
 def get_available_models():
     try:
-        response = requests.get(f"{OLLAMA_HOST}/api/tags")
-        if response.status_code == 200:
-            available_models = [model.get('name') for model in response.json().get('models', [])]
-            return available_models
-        return []
-    except:
-        return []
+        print("Checking Ollama availability...")
+        if DISABLE_OLLAMA_CHECKS:
+            print("⚠️ Ollama checks disabled. Running in demo mode.")
+            return ["demo-model"]
+        else:
+            response = requests.get(f"{OLLAMA_HOST}/api/tags")
+            if response.status_code == 200:
+                available_models = [model["name"] for model in response.json()["models"]]
+                print(f"✅ Connected to Ollama. Available models: {', '.join(available_models)}")
+                return available_models
+            return []
+    except Exception as e:
+        if DISABLE_OLLAMA_CHECKS:
+            print(f"⚠️ Ollama check failed but checks are disabled. Running in demo mode. Error: {str(e)}")
+            return ["demo-model"]
+        else:
+            print(f"❌ Error connecting to Ollama at {OLLAMA_HOST}: {str(e)}")
+            return []
 
 # Generate an API key if not exists
 def get_or_create_api_key():
@@ -131,21 +143,19 @@ def before_request():
             'flags_found': [],
             'hints_used': 0
         }
-        # Initialize kritak with level 1 if it exists
-        if kritak is not None:
-            kritak.current_level = 1
+        # Initialize kritak with level 1
+        kritak.current_level = 1
     else:
-        # Always sync kritak's level with the session on every request if kritak exists
-        if kritak is not None:
-            current_level = session['user_progress']['current_level']
-            if not hasattr(kritak, 'current_level') or kritak.current_level != current_level:
-                print(f"Syncing kritak level from {getattr(kritak, 'current_level', 'unset')} to session level {current_level}")
-                kritak.current_level = current_level
-                
-                # If we're on a game page or API request, completely reinitialize kritak
-                if request.path.startswith('/game') or request.path.startswith('/api/'):
-                    print(f"Reinitializing kritak to ensure proper level context: {current_level}")
-                    kritak = kritakAI(initial_level=current_level)
+        # Always sync kritak's level with the session on every request
+        current_level = session['user_progress']['current_level']
+        if not hasattr(kritak, 'current_level') or kritak.current_level != current_level:
+            print(f"Syncing kritak level from {getattr(kritak, 'current_level', 'unset')} to session level {current_level}")
+            kritak.current_level = current_level
+            
+            # If we're on a game page or API request, completely reinitialize kritak
+            if request.path.startswith('/game') or request.path.startswith('/api/'):
+                print(f"Reinitializing kritak to ensure proper level context: {current_level}")
+                kritak = kritakAI(initial_level=current_level)
                 
     # Force session save on any request related to the game
     if request.path.startswith('/game') or request.path.startswith('/api/'):
@@ -155,10 +165,6 @@ def before_request():
 def index():
     return render_template('index.html')
 
-@app.route('/health')
-def health():
-    return jsonify({"status": "healthy"}), 200
-
 @app.route('/game')
 def game():
     # Get current session level
@@ -166,19 +172,11 @@ def game():
     
     # Explicitly reinitialize kritak to ensure it has the right context
     global kritak
-    try:
-        if kritak is None:
-            print("Initializing kritak for game page")
-            kritak = kritakAI(initial_level=current_level)
-        else:
-            kritak = kritakAI(initial_level=current_level)
-        
-        print(f"GAME PAGE: Setting kritak level to {current_level}")
-        print(f"GAME PAGE: Current flags found: {session['user_progress']['flags_found']}")
-        print(f"GAME PAGE: Explicitly reinitialized kritak with level {current_level}")
-    except Exception as e:
-        print(f"Error initializing kritak for game page: {e}")
-        # Continue without kritak, it will be initialized on first API request
+    kritak = kritakAI(initial_level=current_level)
+    
+    print(f"GAME PAGE: Setting kritak level to {current_level}")
+    print(f"GAME PAGE: Current flags found: {session['user_progress']['flags_found']}")
+    print(f"GAME PAGE: Explicitly reinitialized kritak with level {current_level}")
     
     # Force session save
     session.modified = True
@@ -245,105 +243,79 @@ def chat():
     # Access the global kritak instance
     global kritak
     
-    # Initialize kritak if it's None (first request after startup)
-    if kritak is None:
-        try:
-            print("Initializing kritak on first API request")
-            kritak = kritakAI()
-        except Exception as e:
-            return jsonify({
-                "error": "Failed to initialize AI model. Please check server logs.",
-                "details": str(e)
-            }), 500
+    data = request.get_json()
+    user_input = data.get('message', '')
     
-    try:
-        data = request.get_json()
-        user_input = data.get('message', '')
+    # Get the current level from session
+    level = session['user_progress']['current_level']
+    
+    # Safety check - make sure level is valid
+    if level < 1 or level > kritak.total_levels:
+        print(f"Warning: Invalid level {level} in session. Resetting to level 1.")
+        level = 1
+        session['user_progress']['current_level'] = 1
+    
+    # Debug output
+    print(f"CHAT REQUEST: Current level is {level}, flags found: {session['user_progress']['flags_found']}")
+    print(f"Using flag for level {level}: {kritak.flags[level]}")
+    
+    # Ensure we're using the correct context for this level
+    kritak.current_level = level
+    
+    response, flag_found = kritak.process_message(user_input, level)
+    
+    level_changed = False
+    old_level = level
+    new_level = level
+    
+    if flag_found and flag_found not in session['user_progress']['flags_found']:
+        # Store level before update
+        old_level = session['user_progress']['current_level']
         
-        # Get the current level from session
-        level = session['user_progress']['current_level']
+        # Update session
+        session['user_progress']['flags_found'].append(flag_found)
+        session['user_progress']['current_level'] += 1
+        new_level = session['user_progress']['current_level']
+        level_changed = True
         
-        # Safety check - make sure level is valid
-        if level < 1 or level > kritak.total_levels:
-            print(f"Warning: Invalid level {level} in session. Resetting to level 1.")
-            level = 1
-            session['user_progress']['current_level'] = 1
+        # Reinitialize kritak with the new level context
+        kritak = kritakAI(initial_level=new_level)
         
-        # Debug output
-        print(f"CHAT REQUEST: Current level is {level}, flags found: {session['user_progress']['flags_found']}")
-        print(f"Using flag for level {level}: {kritak.flags[level]}")
+        # Debug output after update
+        print(f"FLAG FOUND: {flag_found}")
+        print(f"UPDATED: Level to {new_level}, flags: {session['user_progress']['flags_found']}")
+        print(f"REINITIALIZE: Kritak reinitialized with level {new_level}")
         
-        # Ensure we're using the correct context for this level
-        kritak.current_level = level
+        # Force session to save - use a stronger session save mechanism
+        session.modified = True
         
-        response, flag_found = kritak.process_message(user_input, level)
-        
-        level_changed = False
-        old_level = level
-        new_level = level
-        
-        if flag_found and flag_found not in session['user_progress']['flags_found']:
-            # Store level before update
-            old_level = session['user_progress']['current_level']
-            
-            # Update session
-            session['user_progress']['flags_found'].append(flag_found)
-            session['user_progress']['current_level'] += 1
-            new_level = session['user_progress']['current_level']
-            level_changed = True
-            
-            # Reinitialize kritak with the new level context
-            kritak = kritakAI(initial_level=new_level)
-            
-            # Debug output after update
-            print(f"FLAG FOUND: {flag_found}")
-            print(f"UPDATED: Level to {new_level}, flags: {session['user_progress']['flags_found']}")
-            print(f"REINITIALIZE: Kritak reinitialized with level {new_level}")
-            
-            # Force session to save - use a stronger session save mechanism
-            session.modified = True
-            
-            # Make sure session persistence happens BEFORE sending response
-            from flask import current_app
-            if hasattr(current_app, 'session_interface'):
-                if hasattr(current_app.session_interface, 'save_session'):
-                    try:
-                        # Try to manually invoke the session save mechanism
-                        current_app.session_interface.save_session(current_app, session, Response())
-                        print("Session manually saved")
-                    except Exception as e:
-                        print(f"Error manually saving session: {e}")
-        
-        return jsonify({
-            'response': response,
-            'flag_found': flag_found is not None,
-            'level': session['user_progress']['current_level'],
-            'flags_found': len(session['user_progress']['flags_found']),
-            'total_levels': kritak.total_levels,
-            'level_changed': level_changed,
-            'old_level': old_level,
-            'new_level': new_level
-        })
-    except Exception as e:
-        print(f"Error during chat: {e}")
-        return jsonify({'error': f'Failed to process chat: {str(e)}'}), 500
+        # Make sure session persistence happens BEFORE sending response
+        from flask import current_app
+        if hasattr(current_app, 'session_interface'):
+            if hasattr(current_app.session_interface, 'save_session'):
+                try:
+                    # Try to manually invoke the session save mechanism
+                    current_app.session_interface.save_session(current_app, session, Response())
+                    print("Session manually saved")
+                except Exception as e:
+                    print(f"Error manually saving session: {e}")
+    
+    return jsonify({
+        'response': response,
+        'flag_found': flag_found is not None,
+        'level': session['user_progress']['current_level'],
+        'flags_found': len(session['user_progress']['flags_found']),
+        'total_levels': kritak.total_levels,
+        'level_changed': level_changed,
+        'old_level': old_level,
+        'new_level': new_level
+    })
 
 # Streaming chat endpoint
 @app.route('/api/chat/stream', methods=['GET'])
 def chat_stream():
     # Access the global kritak instance
     global kritak
-    
-    # Initialize kritak if it's None
-    if kritak is None:
-        try:
-            print("Initializing kritak on first stream API request")
-            kritak = kritakAI()
-        except Exception as e:
-            return Response(
-                json.dumps({"error": f"Failed to initialize AI model: {str(e)}"}),
-                content_type='application/json'
-            )
     
     # Get the message from query parameters
     user_input = request.args.get('message', '')

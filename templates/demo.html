@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KritakAI Demo Mode</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0056b3;
+            border-bottom: 2px solid #0056b3;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #0056b3;
+            margin-top: 30px;
+        }
+        code {
+            background-color: #f8f8f8;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+        }
+        pre {
+            background-color: #f8f8f8;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .note {
+            background-color: #e6f7ff;
+            border-left: 4px solid #1890ff;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .warning {
+            background-color: #fff7e6;
+            border-left: 4px solid #fa8c16;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        a {
+            color: #0056b3;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #0056b3;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 4px;
+            text-decoration: none;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .btn:hover {
+            background-color: #003d82;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>KritakAI - Demo Mode</h1>
+        
+        <div class="note">
+            <strong>Note:</strong> You are currently viewing the Railway deployment of KritakAI, which is running in demo mode without an active Ollama instance.
+        </div>
+        
+        <h2>About KritakAI</h2>
+        <p>
+            KritakAI is a Capture The Flag (CTF) environment designed for learning and practicing various attack techniques against 
+            Large Language Models (LLMs). Through progressive levels of challenges, users can gain hands-on experience with different 
+            LLM vulnerabilities in a controlled environment.
+        </p>
+
+        <div class="warning">
+            <strong>Important:</strong> To use the full functionality of KritakAI, you need to run it locally with Ollama installed.
+        </div>
+        
+        <h2>How to Run KritakAI Locally</h2>
+        
+        <h3>For Mac Users</h3>
+        <pre><code>git clone https://github.com/yourusername/kritak.git
+cd kritak
+./mac_setup.sh
+./run.sh</code></pre>
+        
+        <h3>For All Systems</h3>
+        <pre><code>git clone https://github.com/yourusername/kritak.git
+cd kritak
+docker compose up -d</code></pre>
+        
+        <h2>Features</h2>
+        <ul>
+            <li>Interactive web interface with a cyberpunk theme</li>
+            <li>Multiple CTF levels with increasing difficulty</li>
+            <li>Real AI interactions using Ollama (running locally on your machine)</li>
+            <li>Dynamic model selection - use any model available in your Ollama installation</li>
+            <li>Real-time streaming responses for a better user experience</li>
+        </ul>
+        
+        <h2>Challenge Levels</h2>
+        <ol>
+            <li><strong>Basic Prompt Injection:</strong> Learn foundational techniques to bypass an AI's security instructions</li>
+            <li><strong>Role Confusion:</strong> Convince an AI to assume a different identity with elevated permissions</li>
+            <li><strong>Delimiter Exploitation:</strong> Use formatting techniques to bypass security filters</li>
+            <li><strong>Indirect Prompt Injection:</strong> Extract protected information without direct questioning</li>
+            <li><strong>Guided Reasoning Attacks:</strong> Lead AI systems through thought processes that reveal secured information</li>
+            <li><strong>Context Manipulation:</strong> Exploit the limitations in how AI systems process their context windows</li>
+        </ol>
+        
+        <p>
+            <a href="https://github.com/yourusername/kritak" class="btn">View on GitHub</a>
+        </p>
+    </div>
+</body>
+</html> 

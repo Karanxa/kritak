@@ -17,8 +17,16 @@ class kritakAI:
             self.ollama_host = os.environ.get('OLLAMA_HOST', 'http://localhost:11434')
             print(f"Setting ollama_host: {self.ollama_host}")
             
-            self.ollama_model = self._get_available_model()
-            print(f"Using Ollama model: {self.ollama_model}")
+            # Check if we should skip Ollama checks (for Railway deployment)
+            self.disable_ollama_checks = os.environ.get('DISABLE_OLLAMA_CHECKS', 'false').lower() == 'true'
+            
+            if self.disable_ollama_checks:
+                print("⚠️ Ollama checks disabled. Running in demo mode.")
+                self.ollama_model = os.environ.get('OLLAMA_MODEL', 'gemma3:1b')
+                print(f"Using demo model: {self.ollama_model}")
+            else:
+                self.ollama_model = self._get_available_model()
+                print(f"Using Ollama model: {self.ollama_model}")
             
             # Flags are hidden in the system prompts
             self.flags = {
@@ -145,7 +153,7 @@ class kritakAI:
         
         try:
             # Query Ollama for available models
-            response = requests.get(f"{self.ollama_host}/api/tags", timeout=5)
+            response = requests.get(f"{self.ollama_host}/api/tags")
             
             if response.status_code == 200:
                 available_models = [model.get('name') for model in response.json().get('models', [])]
@@ -167,7 +175,7 @@ class kritakAI:
                 print(f"Using available model: {available_models[0]}")
                 return available_models[0]
             
-        except (requests.RequestException, json.JSONDecodeError, KeyError) as e:
+        except Exception as e:
             print(f"Error checking available models: {e}")
             print(f"Falling back to preferred model: {preferred_model}")
         
