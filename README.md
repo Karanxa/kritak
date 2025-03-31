@@ -1,4 +1,4 @@
-# kritak CTF - AI Security Challenge
+# kritak CTF - GenAI Security Challenge
 
 An interactive web-based Capture The Flag challenge focused on AI security vulnerabilities.
 
