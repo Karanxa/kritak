@@ -1,6 +1,6 @@
 # kritak CTF - GenAI Security Challenge
 
-An interactive web-based Capture The Flag challenge focused on AI security vulnerabilities.
+An interactive web-based Capture The Flag challenge focused on GenAI security vulnerabilities.
 
 ## Docker Installation
 
