@@ -1,7 +1,5 @@
 # kritak CTF - GenAI Security Challenge
 
-![Kritak GenAI Security Challenge](https://raw.githubusercontent.com/OWASP/www-project-top-10-for-large-language-model-applications/main/assets/images/LLM_banner.png)
-
 An interactive web-based Capture The Flag challenge focused on GenAI security vulnerabilities.
 
 ## Table of Contents
