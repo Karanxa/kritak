@@ -95,4 +95,4 @@ python app.py
 
 ## Game Overview
 
-The game consists of six levels of increasing difficulty that teach different aspects of AI security and prompt engineering. 
+The game consists of six levels of increasing difficulty that teach different aspects of GenAI security. Good luck.
