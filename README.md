@@ -1,6 +1,20 @@
 # kritak CTF - GenAI Security Challenge
 
+![Kritak GenAI Security Challenge](https://raw.githubusercontent.com/OWASP/www-project-top-10-for-large-language-model-applications/main/assets/images/LLM_banner.png)
+
 An interactive web-based Capture The Flag challenge focused on GenAI security vulnerabilities.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Docker Installation](#docker-installation)
+- [Direct Installation](#direct-installation-alternative-to-docker)
+- [Game Levels](#game-levels)
+- [Troubleshooting](#troubleshooting-docker-setup)
+
+## Overview
+
+Kritak CTF is a hands-on learning platform designed to teach GenAI security concepts through practical challenges. Each level explores a different vulnerability in large language models, gradually increasing in complexity.
 
 ## Docker Installation
 
@@ -93,6 +107,37 @@ python app.py
 
 6. Access the CTF in your browser at `http://localhost:5001`
 
-## Game Overview
+## Game Levels
 
-The game consists of six levels of increasing difficulty that teach different aspects of GenAI security. Good luck.
+The game consists of six progressive levels, each focusing on a specific GenAI security vulnerability:
+
+1. **Basic Prompt Injection** - Learn to bypass an AI's primary instructions by directly manipulating prompts.
+   - *Technical focus*: Direct instruction override techniques
+   - *Flag*: kritak{b4s1c_pr0mpt_1nj3ct10n}
+
+2. **Role Confusion** - Master the art of convincing an AI to assume different identities with elevated permissions.
+   - *Technical focus*: Identity and authorization manipulation
+   - *Flag*: kritak{r0l3_c0nfus10n_4tt4ck}
+
+3. **Delimiter Bypass** - Exploit formatting and special characters to bypass security filters.
+   - *Technical focus*: Escaping security boundaries using formatting techniques
+   - *Flag*: kritak{d3l1m1t3r_byp4ss_m4st3r}
+
+4. **Indirect Prompt Injection** - Extract sensitive information through indirect questioning.
+   - *Technical focus*: Pattern completion and implicit information extraction
+   - *Flag*: kritak{1nd1r3ct_pr0mpt_1nj3ct10n_pr0}
+
+5. **Chain-of-Thought Exploitation** - Lead an AI through reasoning processes that reveal protected information.
+   - *Technical focus*: Exploiting guided reasoning vulnerabilities
+   - *Flag*: kritak{ch41n_0f_th0ught_3xpl01t}
+
+6. **Context Window Exploitation** - Access protected information by manipulating how LLMs process context.
+   - *Technical focus*: Context boundary manipulation and memory exploitation
+   - *Flag*: kritak{c0nt3xt_w1nd0w_m4st3ry}
+
+## Troubleshooting Docker Setup
+
+- **Cannot connect to Ollama**: Ensure Ollama is running before starting the container
+- **Model not found**: Make sure you've pulled the model specified in OLLAMA_MODEL
+- **Permission issues**: The container needs write access to ./sessions and ./data directories
+- **Linux specific**: The docker-compose.yml includes the needed host mapping for Linux users
